@@ -21,19 +21,22 @@ export default function App() {
   const [work, setWork] = useState(null);
   const [toast, setToast] = useState(null);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState(null);
 
   const flash = (msg, tint) => { setToast({ msg, tint }); setTimeout(() => setToast(null), 2400); };
 
   const loadProfile = useCallback(async () => {
-    const { data } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
+    const { data, error } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
+    if (error) return setLoadError(error.message);
     setProfile(data);
   }, [session]);
 
   const loadCommon = useCallback(async () => {
-    const [{ data: s }, { data: t }] = await Promise.all([
+    const [{ data: s, error: se }, { data: t, error: te }] = await Promise.all([
       supabase.from("platform_settings").select("*").eq("id", 1).single(),
       supabase.from("public_tasks").select("*"),
     ]);
+    if (se || te) return setLoadError((se || te).message);
     setSettings(s); setTasks(t || []);
   }, []);
 
@@ -44,8 +47,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!session) { setProfile(null); return; }
-    loadProfile(); loadCommon();
+    if (!session) { setProfile(null); setLoadError(null); return; }
+    setLoadError(null); loadProfile(); loadCommon();
   }, [session, loadProfile, loadCommon]);
 
   const signOut = async () => { await supabase.auth.signOut(); setView("earner"); setWork(null); };
@@ -72,6 +75,15 @@ export default function App() {
 
       {!session ? (
         <Auth flash={flash} />
+      ) : loadError ? (
+        <main className="nx-main">
+          <div className="nx-empty stern">
+            <div className="nx-empty-icon">!</div>
+            <h3>We couldn't load your account</h3>
+            <p>{loadError}</p>
+            <button className="nx-linkbtn" onClick={signOut}>Sign out</button>
+          </div>
+        </main>
       ) : !profile || !settings ? (
         <main className="nx-main"><p style={{ color: "#8792a6" }}>Loading…</p></main>
       ) : view === "operator" && profile.role === "operator" ? (
