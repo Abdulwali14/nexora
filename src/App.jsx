@@ -91,8 +91,10 @@ function Auth({ flash }) {
   const [mode, setMode] = useState("signin");
   const [step, setStep] = useState("email");
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const valid = /\S+@\S+\.\S+/.test(email);
+  const validCode = /^\d{6}$/.test(code);
 
   const send = async () => {
     setBusy(true);
@@ -102,6 +104,13 @@ function Auth({ flash }) {
     setBusy(false);
     if (error) return flash(error.message, "#f87171");
     setStep("sent");
+  };
+
+  const verify = async () => {
+    setBusy(true);
+    const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
+    setBusy(false);
+    if (error) return flash(error.message, "#f87171");
   };
 
   return (
@@ -126,8 +135,13 @@ function Auth({ flash }) {
         ) : (
           <>
             <h2>Check your email</h2>
-            <p>We sent a magic link to <b>{email}</b>. Tap it and you'll be signed in automatically.</p>
-            <button className="nx-linkbtn" onClick={() => setStep("email")}>Use a different email</button>
+            <p>We sent a link and a 6-digit code to <b>{email}</b>. Tap the link, or enter the code below if the link doesn't sign you in (this can happen with some email providers that prescan links).</p>
+            <input className="nx-gate-input" type="text" inputMode="numeric" maxLength={6} placeholder="123456" value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} onKeyDown={(e) => e.key === "Enter" && validCode && verify()} />
+            <button className="nx-submit" style={{ width: "100%" }} disabled={!validCode || busy} onClick={verify}>
+              {busy ? "Verifying…" : "Verify code"}
+            </button>
+            <button className="nx-linkbtn" onClick={() => { setStep("email"); setCode(""); }}>Use a different email</button>
           </>
         )}
       </div>
