@@ -94,7 +94,7 @@ function Auth({ flash }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const valid = /\S+@\S+\.\S+/.test(email);
-  const validCode = /^\d{6}$/.test(code);
+  const validCode = /^\d{4,10}$/.test(code);
 
   const send = async () => {
     setBusy(true);
@@ -135,8 +135,8 @@ function Auth({ flash }) {
         ) : (
           <>
             <h2>Check your email</h2>
-            <p>We sent a link and a 6-digit code to <b>{email}</b>. Tap the link, or enter the code below if the link doesn't sign you in (this can happen with some email providers that prescan links).</p>
-            <input className="nx-gate-input" type="text" inputMode="numeric" maxLength={6} placeholder="123456" value={code}
+            <p>We sent a link and a code to <b>{email}</b>. Tap the link, or enter the code below if the link doesn't sign you in (this can happen with some email providers that prescan links).</p>
+            <input className="nx-gate-input" type="text" inputMode="numeric" maxLength={10} placeholder="Enter code" value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} onKeyDown={(e) => e.key === "Enter" && validCode && verify()} />
             <button className="nx-submit" style={{ width: "100%" }} disabled={!validCode || busy} onClick={verify}>
               {busy ? "Verifying…" : "Verify code"}
